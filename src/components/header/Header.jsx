@@ -2,24 +2,30 @@
 
 // --- FIX 1: Add all missing imports ---
 import React, { useState, useEffect } from 'react'; 
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { 
     FaSearch, FaChevronDown, FaBars, FaTimes,
     FaUser, FaCog, FaSignOutAlt, FaShoppingCart 
 } from 'react-icons/fa';
 import logoImage from '../../assets/logoBKBay.png'; // Assuming this path is correct
+import getCurrentUser from '../../services/userService'; // If needed for user data
+
+// default avatar (Gravatar 'mystery person' silhouette)
+const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
 
 // --- FIX 2: Define navItems. We'll make them match the desktop nav. ---
 const navItems = [
-    { title: "Home", path: "/" },
-    { title: "Dashboard", path: "/dashboard" },
-    { title: "User", path: "/user" },
-    { title: "Shipper Details", path: "/shipper-details" },
-    { title: "Seller Report", path: "/seller-report" },
+    // { title: "Home", path: "/" },
+    // { title: "Dashboard", path: "/dashboard" },
+    // { title: "User", path: "/user" },
+    // { title: "Shipper Details", path: "/shipper-details" },
+    // { title: "Seller Report", path: "/seller-report" },
 ];
 
 export default function Header() {
-    const [userAvatar, setUserAvatar] = useState('https://via.placeholder.com/36');
+    const navigate = useNavigate();
+    const [userAvatar, setUserAvatar] = useState(DEFAULT_AVATAR);
+    const [currentUser, setCurrentUser] = useState(null);
     
     // --- FIX 3: Define missing state ---
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -31,20 +37,64 @@ export default function Header() {
         `block text-base font-bold uppercase tracking-wider hover:bg-secondary transition-colors px-3 py-2 rounded-md ${
             isActive ? "bg-secondary text-white" : "text-gray-900" // Adjusted for white mobile bg
         }`;
-
-    // This useEffect is fine, just needed the import
-    useEffect(() => {
-        fetch('https://randomuser.me/api/?gender=female&inc=picture')
-            .then(response => response.json())
-            .then(data => {
-                if (data.results && data.results.length > 0) {
-                    setUserAvatar(data.results[0].picture.thumbnail);
-                }
-            })
-            .catch(error => {
-                console.error("Error fetching random user avatar:", error);
-                setUserAvatar('https://via.placeholder.com/36'); 
+    
+    const handleLogout = async () => {
+        // Add your logout logic here
+        try {
+            await fetch('/api/users/logout', {
+                method: 'POST',
+                credentials: 'include',
             });
+            setCurrentUser(null);
+            // Optionally redirect to login page
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+    }
+
+    // Fetch current user once on mount
+    useEffect(() => {
+        let mounted = true;
+        const fetchUser = async () => {
+            try {
+                const userData = await getCurrentUser();
+                console.log('Current user data:', userData);
+                if (!mounted) return;
+                if (userData && (userData.user || userData.data || userData)) {
+                    const parsed = userData.user || userData.data || userData;
+                    setCurrentUser(parsed);
+                    // If your API returns an avatar URL on the user object, prefer it
+                    if (parsed.avatar) {
+                        setUserAvatar(parsed.avatar);
+                    } else {
+                        // Fallback to a random avatar service asynchronously; if that fails, use DEFAULT_AVATAR
+                        fetch('https://randomuser.me/api/?gender=female&inc=picture')
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.results && data.results.length > 0) {
+                                    if (mounted) setUserAvatar(data.results[0].picture.thumbnail);
+                                } else if (mounted) {
+                                    setUserAvatar(DEFAULT_AVATAR);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching random user avatar:', error);
+                                if (mounted) setUserAvatar(DEFAULT_AVATAR);
+                            });
+                    }
+                } else {
+                    // no logged-in user
+                    setCurrentUser(null);
+                    setUserAvatar(DEFAULT_AVATAR);
+                }
+            } catch (err) {
+                console.error('Error resolving current user:', err);
+                if (mounted) setCurrentUser(null);
+            }
+        };
+        fetchUser();
+        return () => { mounted = false; };
     }, []); // Empty dependency array means this runs once on mount
 
     return (
@@ -63,11 +113,11 @@ export default function Header() {
                 {/* Navigation Links (Desktop) */}
                 <nav className="hidden md:flex space-x-8">
                     {/* Using the navItems array for desktop nav for consistency */}
-                    {navItems.map((item) => (
+                        {navItems.map((item) => (
                         <Link 
                             key={item.title} 
                             to={item.path} 
-                            className="text-gray-600 hover:text-[var(--color-primary)] font-medium"
+                            className="text-gray-600 hover:text-primary font-medium"
                         >
                             {item.title}
                         </Link>
@@ -76,9 +126,9 @@ export default function Header() {
 
                 {/* User Profile & Menu (Desktop) */}
                 <div className="hidden md:flex items-center space-x-3 relative">
-                    <span className="text-gray-700 font-medium">Alice Smith</span>
+                    <span className="text-gray-700 font-medium">{currentUser ? currentUser.Username : 'Guest'}</span>
                     <img
-                        className="h-9 w-9 rounded-full cursor-pointer"
+                        className="h-9 w-9 rounded-full cursor-pointer border-2 border-gray-300"
                         src={userAvatar}
                         alt="User avatar"
                         onClick={() => setShowUserMenu(!showUserMenu)} // Add click handler
@@ -89,7 +139,7 @@ export default function Header() {
                         <div className="absolute top-full right-0 mt-2 w-52 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden z-50">
                             <ul className="py-1 text-sm text-gray-700">
                                 <li className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
-                                    Welcome, User!
+                                    Welcome, {currentUser ? currentUser.Username : 'Guest'}
                                 </li>
                                 <li>
                                     <Link
@@ -122,6 +172,7 @@ export default function Header() {
                                     <button
                                         onClick={() => {
                                             // Add your logout logic here
+                                            handleLogout();
                                             setShowUserMenu(false);
                                         }}
                                         className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 w-full text-left text-red-600 hover:text-red-700"
@@ -207,6 +258,7 @@ export default function Header() {
                     <button
                         onClick={() => {
                             // Add logout logic
+                            handleLogout();
                             setIsMobileMenuOpen(false);
                         }}
                         className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 w-full text-left text-red-600 hover:text-red-700"

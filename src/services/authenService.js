@@ -35,7 +35,7 @@ export async function registerUser(userData) {
 }
 
 export async function loginUser(credentials) {
-    const response = await fetch("http://localhost:5173/api/users/login", {
+    const response = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials)
