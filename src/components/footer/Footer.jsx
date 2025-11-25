@@ -17,7 +17,7 @@ export default function Footer() {
           <span>|</span>
           <span>+1 (555) 123-4567</span>
           <span>|</span>
-          <span>123 Admin St, Business City</span>
+          <span>268 Ly Thuong Kiet St, Ho Chi Minh City</span>
         </div>
         <div className="mt-3 flex justify-center space-x-4">
           {/* Social Media Icons (replace with actual links) */}

@@ -16,6 +16,7 @@ const navItems = [
     { title: "User", path: "/user" },
     { title: "Shipper Details", path: "/shipper-details" },
     { title: "Seller Report", path: "/seller-report" },
+    { title: "Review", path: "/write-review" },
 ];
 
 export default function Header() {
