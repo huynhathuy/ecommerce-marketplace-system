@@ -1,5 +1,4 @@
-
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import ShoppingCart from './pages/CartPage';
@@ -8,25 +7,15 @@ import SellerProductReport from './pages/Seller/SellerProductReport';
 import LandingPage from './pages/Home/LandingPage';
 import Promotion from './pages/promotion/Promotion';
 import UserDetails from './pages/User/UserDetails';
-<<<<<<< HEAD
 import ProductReviews from './pages/Review/ProductReviews';
-=======
-import LoginPage from './pages/Login/loginPage';
->>>>>>> 8fcba1c7de55b1642ef28cbe39c1b01b60c96a3a
+import LoginPage from './pages/Login/LoginPage';
+import ProductListingPage from './pages/Products/ProductListingPage';
+import SellerDashboardPage from './pages/Seller/SellerDashboardPage';
+import AddProductPage from './pages/Seller/AddProductPage';
 
 function App() {
   return (
     <Routes>
-<<<<<<< HEAD
-      <Route path="/" element={<HomePage/>} />
-      <Route path="/about" element={<h1>About Page</h1>} />
-      <Route path="/cart" element={<ShoppingCart/>} />
-      <Route path="/shipper-details" element={<ShipperDetails />} />
-      <Route path="/seller-report" element={<SellerProductReport />} />
-      <Route path="/promotion" element={<Promotion />} />
-      <Route path="/user" element={<UserDetails />} />
-      <Route path="/review" element={<ProductReviews />} />
-=======
       <Route path="/login" element={
         <PublicRoute>
           <LoginPage />
@@ -37,6 +26,9 @@ function App() {
         <ProtectedRoute>
           <LandingPage />
         </ProtectedRoute>} />
+      <Route path="/about" element=
+        {<h1>About Page</h1>
+      } />
       <Route path="/cart" element={
         <ProtectedRoute>
           <ShoppingCart />
@@ -52,6 +44,28 @@ function App() {
           <SellerProductReport />
         </ProtectedRoute>
       } />
+      <Route path="/seller-dashboard" element={
+        <ProtectedRoute>
+          <SellerDashboardPage />
+        </ProtectedRoute>
+      } />
+      {/* Backwards-compatible aliases: some parts of the app/navigation use /seller/... paths */}
+      <Route path="/seller/seller-dashboard" element={
+        <ProtectedRoute>
+          <SellerDashboardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/seller" element={<Navigate to="/seller/seller-dashboard" replace />} />
+      <Route path="/add-product" element={
+        <ProtectedRoute>
+          <AddProductPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/seller/add-product" element={
+        <ProtectedRoute>
+          <AddProductPage />
+        </ProtectedRoute>
+      } />
       <Route path="/promotion" element={
         <ProtectedRoute>
           <Promotion />
@@ -62,9 +76,19 @@ function App() {
           <UserDetails />
         </ProtectedRoute>
       } />
->>>>>>> 8fcba1c7de55b1642ef28cbe39c1b01b60c96a3a
+      <Route path="/products" element={
+        <ProtectedRoute>
+          <ProductListingPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/review" element={
+        <ProtectedRoute>
+        <ProductReviews />
+        </ProtectedRoute>
+      } />
     </Routes>
   );
 }
 
 export default App
+
