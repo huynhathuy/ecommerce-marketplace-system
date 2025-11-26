@@ -73,9 +73,22 @@ function ProductList({ View = "horizontal", Products = [], modeRate = false }) {
                     <ProductCard key={startIdx + i} product={product} modeRate={modeRate} view={View}/>
                 ))}
             </div>
+
+            {products.length === 0 ? (
+              <div className="py-12 text-center text-zinc-600 dark:text-zinc-400">
+                No products found. Try adjusting filters or <button onClick={() => onPageChange(1)} className="text-primary underline">reload</button>.
+              </div>
+            ) : (
+              <div className={`grid ${view} gap-6`}>
+                  {products.map((product) => (
+                      <ProductCard key={product.product_id || product.id} product={product} modeRate={modeRate} onAddToCart={onAddToCart} />
+                  ))}
+              </div>
+            )}
+
             <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
+              currentPage={pagination?.currentPage || 1}
+              totalPages={pagination?.totalPages || 1}
               onPageChange={onPageChange}
             />
         </>
