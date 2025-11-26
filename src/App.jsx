@@ -79,11 +79,11 @@ function App() {
           <UserDetails />
         </ProtectedRoute>
       } />
-      {/* <Route path="/products" element={
+      { <Route path="/product/:barcode" element={
         <ProtectedRoute>
           <ProductListingPage />
         </ProtectedRoute>
-      } /> */}
+      } /> }
       <Route path="/review" element={
         <ProtectedRoute>
         <ProductReviews />
