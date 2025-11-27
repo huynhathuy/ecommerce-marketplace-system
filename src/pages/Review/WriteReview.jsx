@@ -52,13 +52,7 @@ const WriteReview = () => {
   }, []);
 
   const handleNavigateToReviews = () => {
-    const selectedPurchase = purchases.find(p => p.id === selectedPurchaseId);
-    if (selectedPurchase && selectedPurchase.productId) {
-      navigate(`/product/${selectedPurchase.productId}/reviews`);
-    } else {
-      setError('Không tìm thấy mã sản phẩm để điều hướng. Vui lòng chọn một sản phẩm.');
-      console.error("Navigation failed: could not find 'productId' on the selected purchase:", selectedPurchase);
-    }
+    navigate('/product/review');
   };
 
   const handleSubmit = async () => {
