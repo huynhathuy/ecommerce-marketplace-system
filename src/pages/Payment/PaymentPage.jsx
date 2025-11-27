@@ -3,43 +3,72 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../../components/header/Header';
 import Footer from '../../components/footer/Footer';
 import { FiCheck } from 'react-icons/fi';
+import paymentService from '../../services/paymentService';
 
 export default function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { orderData } = location.state || {};
+  const [orderData] = useState(location.state?.orderData || null);
+
+  console.log('PaymentPage: Order data (navigation state only):', orderData);
   
-  const [paymentMethod, setPaymentMethod] = useState('qr');
+  const [paymentMethod, setPaymentMethod] = useState('card');
   const [showSuccess, setShowSuccess] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [orderError, setOrderError] = useState('');
+  const [orderSuccessMsg, setOrderSuccessMsg] = useState('');
 
-  // If no order data, redirect back
+  // If state is lost (no orderData), send user back to cart immediately
   useEffect(() => {
     if (!orderData) {
-      navigate('/checkout');
+      navigate('/cart');
     }
   }, [orderData, navigate]);
 
-  const handlePayment = () => {
-    // Simulate payment processing
+  const handlePayment = async () => {
+    // Simulate card payment success then create order
     setShowSuccess(true);
-    
-    // Start countdown
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/'); // Redirect to home after countdown
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    try {
+      const { address, quantity, price, barcode, variationname } = orderData || {};
+      const res = await paymentService.createOrder({ address, quantity, price, barcode, variationname, status: 'Pending' });
+      setOrderSuccessMsg(res?.message || 'Order created successfully');
+      setOrderError('');
+      // Success: redirect to buyer orders after countdown
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            navigate('/buyer/orders');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (e) {
+      console.error('Create order error:', e);
+      setOrderError(e.message || 'Failed to create order');
+      setOrderSuccessMsg('');
+      // Error: redirect to cart after countdown
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            navigate('/cart');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   };
 
   if (!orderData) return null;
 
   const { total, items, user } = orderData;
+  const formatAmount = (val) => {
+    const num = Number(val);
+    return Number.isFinite(num) ? num.toFixed(3) : '0.000';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -47,6 +76,18 @@ export default function PaymentPage() {
 
       <main className="max-w-4xl mx-auto p-6 text-black">
         <h1 className="text-2xl font-bold mb-6">Payment</h1>
+
+        {/* Order feedback banners */}
+        {orderError && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">
+            {orderError}
+          </div>
+        )}
+        {orderSuccessMsg && (
+          <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg p-3">
+            {orderSuccessMsg}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Payment Methods */}
@@ -114,7 +155,7 @@ export default function PaymentPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Items ({items?.length || 0})</span>
-                  <span className="font-medium">{(total - 16.5).toFixed(3)}₫</span>
+                  <span className="font-medium">{formatAmount(Number(total) - 16.5)}₫</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
@@ -122,7 +163,7 @@ export default function PaymentPage() {
                 </div>
                 <div className="flex justify-between border-t pt-2 mt-2">
                   <span className="font-semibold">Total</span>
-                  <span className="font-bold text-lg text-red-600">{total.toFixed(3)}₫</span>
+                  <span className="font-bold text-lg text-red-600">{formatAmount(total)}₫</span>
                 </div>
               </div>
             </section>
@@ -131,42 +172,7 @@ export default function PaymentPage() {
           {/* Right: QR Code / Payment Details */}
           <div>
             <section className="bg-white rounded-md shadow p-6">
-              {paymentMethod === 'qr' && (
-                <div className="text-center">
-                  <h3 className="font-semibold mb-4">Scan QR Code to Pay</h3>
-                  <div className="bg-gray-100 p-4 rounded-lg mb-4 inline-block">
-                    {/* QR Code placeholder - in production, generate actual QR code */}
-                    <div className="w-64 h-64 bg-white border-4 border-gray-300 flex items-center justify-center">
-                      <svg className="w-56 h-56" viewBox="0 0 100 100" fill="black">
-                        {/* Simple QR code pattern */}
-                        <rect x="0" y="0" width="20" height="20" />
-                        <rect x="80" y="0" width="20" height="20" />
-                        <rect x="0" y="80" width="20" height="20" />
-                        <rect x="40" y="40" width="20" height="20" />
-                        <rect x="10" y="30" width="10" height="10" />
-                        <rect x="70" y="30" width="10" height="10" />
-                        <rect x="30" y="70" width="10" height="10" />
-                        <rect x="60" y="10" width="10" height="10" />
-                        <rect x="50" y="80" width="10" height="10" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">Amount: <span className="font-bold text-black">{total.toFixed(3)}₫</span></p>
-                  <p className="text-xs text-gray-500 mb-4">Scan this code with your banking app</p>
-                </div>
-              )}
-
-              {paymentMethod === 'cod' && (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="font-semibold mb-2">Cash on Delivery</h3>
-                  <p className="text-sm text-gray-600">You will pay {total.toFixed(3)}₫ when you receive your order</p>
-                </div>
-              )}
+              {/* Only Card payment UI */}
 
               {paymentMethod === 'card' && (
                 <div className="space-y-4">
@@ -196,7 +202,7 @@ export default function PaymentPage() {
                 onClick={handlePayment}
                 className="w-full mt-6 bg-primary hover:bg-secondary text-white py-3 rounded-md font-semibold"
               >
-                Confirm Payment
+                Pay {formatAmount(total)}₫
               </button>
             </section>
           </div>
@@ -212,8 +218,12 @@ export default function PaymentPage() {
                 <FiCheck className="w-8 h-8 text-green-500" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-              <p className="text-gray-600 mb-2">Your order has been placed successfully.</p>
-              <p className="text-sm text-gray-500 mb-4">Order Total: <span className="font-semibold text-red-600">{total.toFixed(3)}₫</span></p>
+              {orderError ? (
+                <p className="text-red-600 mb-2">Order creation failed: {orderError}</p>
+              ) : (
+                <p className="text-gray-600 mb-2">Your order has been placed successfully.</p>
+              )}
+              <p className="text-sm text-gray-500 mb-4">Order Total: <span className="font-semibold text-red-600">{formatAmount(total)}₫</span></p>
               <p className="text-sm text-gray-400">Redirecting in {countdown} seconds...</p>
             </div>
           </div>
